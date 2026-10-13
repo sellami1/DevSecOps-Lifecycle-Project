@@ -63,6 +63,11 @@ La route `/projects` affiche la liste des projets. La route dynamique `/projects
 
 Les consignes de lancement et la structure complète du projet sont également documentées dans [web-cv-nextjs/README.md](web-cv-nextjs/README.md).
 
+# Activité 2 — VI. Premier pipeline Jenkins
+![Pipeline](screenshots/pipe.png)
+![Successful pipe build](screenshots/jenbuild.png)
+
+
 ---
 
 # 14. Première introduction à l'automatisation (Vagrant)
