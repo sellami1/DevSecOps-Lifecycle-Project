@@ -24,6 +24,32 @@ npm run build
 npm start
 ```
 
+## Déploiement Docker
+
+Le `Dockerfile` utilise une construction multi-étapes. Next.js génère une sortie `standalone`, puis l'image finale exécute uniquement le serveur de production sur le port `3000` sous un utilisateur non-root.
+
+Depuis ce dossier, construire puis démarrer le conteneur :
+
+```bash
+docker build -t web-cv-nextjs:1.0 .
+docker run -d --name web-cv-nextjs --restart unless-stopped -p 3000:3000 web-cv-nextjs:1.0
+```
+
+Ouvrir `http://localhost:3000`. Pour vérifier son état et consulter les logs :
+
+```bash
+docker ps --filter name=web-cv-nextjs
+docker logs -f web-cv-nextjs
+```
+
+Pour arrêter puis supprimer le conteneur avant un nouveau déploiement :
+
+```bash
+docker rm -f web-cv-nextjs
+```
+
+Sur une VM, remplacer `localhost` par son adresse IP et autoriser le port `3000` dans le pare-feu. Le premier `docker build` peut télécharger l'image Node et les dépendances npm requises.
+
 ## Composants réutilisables
 
 ```text
