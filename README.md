@@ -561,3 +561,20 @@ screenshots/
 ├── 10-git-remote-ssh.png
 └── 11-git-push.png
 ```
+
+---
+
+# Activité 2 — V. Migration du Portfolio vers Next.js
+
+Le nouveau sous-projet `web-cv-nextjs/` reprend le portfolio `web-cv/` avec Next.js App Router. Il conserve les sections About, Experience, Projects, Skills et Contact et sépare Header, About, Skills, Projects, Contact et Footer en composants réutilisables.
+
+Pour installer les dépendances et démarrer l'application, depuis `web-cv-nextjs/` :
+
+```bash
+npm install
+npm run dev
+```
+
+Les données projets et compétences sont séparées dans `web-cv-nextjs/data/projects.js` et `web-cv-nextjs/data/skills.js`. Les routes dédiées sont `/projects` et `/projects/secure-ci-cd-pipeline` (ainsi que les autres slugs déclarés dans les données).
+
+La commande de création du projet, la structure des composants, un exemple de données et les consignes de captures d'écran sont documentés dans [web-cv-nextjs/README.md](web-cv-nextjs/README.md). Les captures de la version Next.js restent à réaliser après lancement dans un navigateur.
