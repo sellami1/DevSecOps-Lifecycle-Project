@@ -12,6 +12,59 @@
 
 ---
 
+# Activité 2 — V. Migration du Portfolio vers Next.js
+
+Le nouveau sous-projet `web-cv-nextjs/` reprend le portfolio `web-cv/` avec Next.js App Router. Il conserve les sections About, Experience, Projects, Skills et Contact.
+
+## 18. Créer une version Next.js
+
+Commande utilisée pour créer le projet avec JavaScript, ESLint et App Router :
+
+```bash
+npx create-next-app@latest web-cv-nextjs --js --eslint --app --no-src-dir --no-tailwind --import-alias "@/*"
+```
+
+Pour installer les dépendances et démarrer l'application, depuis `web-cv-nextjs/` :
+
+```bash
+npm install
+npm run dev
+```
+
+L'application est accessible sur `http://localhost:3000`.
+
+### Capture d'écran — Interface de l'application Next.js
+
+![Portfolio DevSecOps exécuté avec Next.js](screenshots/nextjs.png)
+
+## 19. Créer des composants réutilisables
+
+Les principales sections du portfolio sont organisées en composants dans `web-cv-nextjs/components/` : Header, About, Skills, Projects, Contact et Footer. Les composants Experience et ProgressBar complètent la page.
+
+### Capture d'écran — Structure des composants
+
+![Arborescence des composants Next.js](screenshots/components.png)
+
+## 20. Séparer les données
+
+Les projets et les compétences sont définis dans `web-cv-nextjs/data/projects.js` et `web-cv-nextjs/data/skills.js`. Le composant Projects importe les données projets et les utilise pour générer les cartes et leurs liens de détail.
+
+### Capture d'écran — Déclaration et utilisation des données
+
+![Données projets et affichage dans le composant Projects](screenshots/data.png)
+
+## 21. Ajouter une page dédiée à un projet
+
+La route `/projects` affiche la liste des projets. La route dynamique `/projects/[slug]` affiche le détail du projet correspondant, par exemple `/projects/secure-ci-cd-pipeline`.
+
+### Démonstration GIF — Navigation vers la page Projects
+
+![Navigation sur la route Projects](screenshots/routes.gif)
+
+Les consignes de lancement et la structure complète du projet sont également documentées dans [web-cv-nextjs/README.md](web-cv-nextjs/README.md).
+
+---
+
 # 14. Première introduction à l'automatisation (Vagrant)
 ![Capture à ajouter : Vagrantfile](screenshots/vagfile.png)
 ![Capture à ajouter : Vagrant up result](screenshots/vagup.png)
@@ -429,10 +482,6 @@ Ubuntu Server VM
 
 La clé publique générée précédemment a été collée dans le champ correspondant, puis enregistrée.
 
-### Capture d'écran — Clé ajoutée à GitHub
-
-![GitHub SSH Key](screenshots/08-github-ssh-key.png)
-
 ---
 
 ## 6.5 Test de la connexion SSH à GitHub
@@ -449,10 +498,6 @@ Un message similaire à celui-ci confirme l'authentification :
 Hi <GITHUB_USERNAME>! You've successfully authenticated,
 but GitHub does not provide shell access.
 ```
-
-### Capture d'écran — Test GitHub SSH
-
-![GitHub SSH test](screenshots/09-github-ssh-test.png)
 
 ---
 
@@ -483,10 +528,6 @@ origin  git@github.com:<GITHUB_USERNAME>/<REPOSITORY>.git (fetch)
 origin  git@github.com:<GITHUB_USERNAME>/<REPOSITORY>.git (push)
 ```
 
-### Capture d'écran — Remote Git configuré en SSH
-
-![Git remote SSH](screenshots/10-git-remote-ssh.png)
-
 ---
 
 ## 6.7 Test du Push
@@ -512,10 +553,6 @@ git push origin main
 
 Le push est effectué via SSH sans demander le mot de passe GitHub.
 
-### Capture d'écran — Git Push
-
-![Git push](screenshots/11-git-push.png)
-
 ---
 
 # 7. Résumé des réalisations
@@ -528,53 +565,3 @@ Le push est effectué via SSH sans demander le mot de passe GitHub.
 | 4     | Installation Jenkins comme service | ✅      |
 | 5     | Création du mini CV One Page       | ✅      |
 | 6     | Configuration GitHub SSH + Push    | ✅      |
-
----
-
-# 8. Liens
-
-### Dépôt GitHub
-
-`<GITHUB_REPOSITORY_URL>`
-
-### CV
-
-`<CV_URL_IF_DEPLOYED>`
-
----
-
-# 9. Captures d'écran
-
-Les captures d'écran utilisées dans ce README sont stockées dans :
-
-```text
-screenshots/
-├── 01-ssh-server.png
-├── 02-ssh-test.png
-├── 03-docker.png
-├── 04-jenkins-service.png
-├── 05-jenkins-web.png
-├── 06-web-cv.png
-├── 07-ssh-public-key.png
-├── 08-github-ssh-key.png
-├── 09-github-ssh-test.png
-├── 10-git-remote-ssh.png
-└── 11-git-push.png
-```
-
----
-
-# Activité 2 — V. Migration du Portfolio vers Next.js
-
-Le nouveau sous-projet `web-cv-nextjs/` reprend le portfolio `web-cv/` avec Next.js App Router. Il conserve les sections About, Experience, Projects, Skills et Contact et sépare Header, About, Skills, Projects, Contact et Footer en composants réutilisables.
-
-Pour installer les dépendances et démarrer l'application, depuis `web-cv-nextjs/` :
-
-```bash
-npm install
-npm run dev
-```
-
-Les données projets et compétences sont séparées dans `web-cv-nextjs/data/projects.js` et `web-cv-nextjs/data/skills.js`. Les routes dédiées sont `/projects` et `/projects/secure-ci-cd-pipeline` (ainsi que les autres slugs déclarés dans les données).
-
-La commande de création du projet, la structure des composants, un exemple de données et les consignes de captures d'écran sont documentés dans [web-cv-nextjs/README.md](web-cv-nextjs/README.md). Les captures de la version Next.js restent à réaliser après lancement dans un navigateur.
