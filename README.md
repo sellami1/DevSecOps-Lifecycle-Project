@@ -312,7 +312,22 @@ devsecops-portfolio/
 ```
 ## 3. Activity 3 — Ansible Automation, Express API and Dockerization
 
-**Objective:** Automate server configuration with Ansible, build an Express API exposing the portfolio data (`/api/health`, `/api/profile`, `/api/projects`, `/api/skills`), wire the Next.js frontend to consume it through an environment-based `API_URL`, and package both tiers as Docker images orchestrated by Docker Compose.
+**Objective:** Automate server configuration with Ansible, build an Express API exposing the portfolio data (`/api/health`, `/api/profile`, `/api/projects`, `/api/skills`), wire the Next.js frontend to consume it through an environment-based `API_URL`, and package both tiers as Docker images orchestrated by Docker Compose. The home and projects pages fetch their data from the API at request time.
+
+### 3.1 Ansible assets
+
+The Ansible configuration and inventory are in `ansible/`. The inventory targets the lab server at `192.168.100.20` as user `lab`; update it to match the target VM and SSH key before use. The playbooks install common packages and Docker Engine:
+
+- `ansible/playbooks/01-install-packages.yml`
+- `ansible/playbooks/02-install-docker.yml`
+
+### 3.2 Express API and frontend fetch helpers
+
+The API serves the portfolio data from `api/data/` and listens on port `4000`. Copy `api/.env.example` to `.env` when running it outside Docker. The Next.js fetch helpers are in `web-cv-nextjs/lib/api.js`; set `API_URL` to the API base URL (the Compose service sets it to `http://api:4000`).
+
+### 3.3 Docker Compose
+
+The root `docker-compose.yml` builds the API and existing Next.js app from their respective directories and publishes the API on port `4000` and the frontend on port `3000`. The existing static-site Compose configuration remains in `web-cv/compose.yaml`.
 
 ---
 

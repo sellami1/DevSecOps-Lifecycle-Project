@@ -1,0 +1,30 @@
+services:
+  api:
+    image: devsecops-api:latest
+    build: ./api
+    container_name: devsecops-api
+    restart: unless-stopped
+    environment:
+      PORT: 4000
+    ports:
+      - "4000:4000"
+    networks:
+      - devsecops
+
+  frontend:
+    image: devsecops-portfolio:latest
+    build: ./web-cv-nextjs
+    container_name: devsecops-portfolio
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    networks:
+      - devsecops
+
+networks:
+  devsecops:
+    driver: bridge
