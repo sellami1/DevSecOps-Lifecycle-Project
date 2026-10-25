@@ -1,572 +1,357 @@
-# TP — Linux Server, SSH, Docker, Jenkins & GitHub
+# DevSecOps Portfolio
 
-## Informations
+**Professor:** [Wahid HAMDI](https://github.com/sellami1)
 
-| Élément             | Valeur                    |
-| ------------------- | ------------------------- |
-| Système serveur     | Debian13 - 6.12.107       |
-| Machine physique    | Linux                     |
-| Docker              | Installé                  |
-| Jenkins             | Installé                  |
-| GitHub              | Configuration SSH activée |
+**Scope:** End-to-end DevSecOps lab on one evolving Portfolio app: provisioning/containerization, Next.js/Express/PostgreSQL modernization, secure CI/CD and supply chain, IaC with local AWS, Kubernetes hardening, GitOps/observability, advanced delivery, and platform engineering/operations.
+
+**Convention:** All screenshots are stored in `docs/screenshots/` and referenced below (`aX-NN-<label>.png`).
 
 ---
 
-# Activité 2 — V. Migration du Portfolio vers Next.js
+## 1. Activity 1 — Initial Setup and Containerization
 
-Le nouveau sous-projet `web-cv-nextjs/` reprend le portfolio `web-cv/` avec Next.js App Router. Il conserve les sections About, Experience, Projects, Skills et Contact.
+**Objective:** Provision an Ubuntu Server VM, secure it with SSH, install Docker and Jenkins, build a mini-CV/DevSecOps Portfolio, containerize it, and introduce Vagrant-based automation.
 
-## 18. Créer une version Next.js
+### 1.1 Ubuntu Server installation (Task 1)
 
-Commande utilisée pour créer le projet avec JavaScript, ESLint et App Router :
+Ubuntu Server 26.04 LTS installed on a VirtualBox VM with a NAT + host-only adapter (static IP `192.168.56.10`). OpenSSH server selected during installation.
 
 ```bash
-npx create-next-app@latest web-cv-nextjs --js --eslint --app --no-src-dir --no-tailwind --import-alias "@/*"
+lsb_release -a
+ip -4 addr show | grep inet
 ```
 
-Pour installer les dépendances et démarrer l'application, depuis `web-cv-nextjs/` :
+### 1.2 SSH access (Task 2)
 
 ```bash
-npm install
-npm run dev
+sudo systemctl status ssh
+# From the host machine
+ssh ubuntu@192.168.56.10
 ```
 
-L'application est accessible sur `http://localhost:3000`.
+![SSH access from host](docs/screenshots/a1-02-ssh-access.png)
 
-### Capture d'écran — Interface de l'application Next.js
-
-![Portfolio DevSecOps exécuté avec Next.js](screenshots/nextjs.png)
-
-## 19. Créer des composants réutilisables
-
-Les principales sections du portfolio sont organisées en composants dans `web-cv-nextjs/components/` : Header, About, Skills, Projects, Contact et Footer. Les composants Experience et ProgressBar complètent la page.
-
-### Capture d'écran — Structure des composants
-
-![Arborescence des composants Next.js](screenshots/components.png)
-
-## 20. Séparer les données
-
-Les projets et les compétences sont définis dans `web-cv-nextjs/data/projects.js` et `web-cv-nextjs/data/skills.js`. Le composant Projects importe les données projets et les utilise pour générer les cartes et leurs liens de détail.
-
-### Capture d'écran — Déclaration et utilisation des données
-
-![Données projets et affichage dans le composant Projects](screenshots/data.png)
-
-## 21. Ajouter une page dédiée à un projet
-
-La route `/projects` affiche la liste des projets. La route dynamique `/projects/[slug]` affiche le détail du projet correspondant, par exemple `/projects/secure-ci-cd-pipeline`.
-
-### Démonstration GIF — Navigation vers la page Projects
-
-![Navigation sur la route Projects](screenshots/routes.gif)
-
-Les consignes de lancement et la structure complète du projet sont également documentées dans [web-cv-nextjs/README.md](web-cv-nextjs/README.md).
-
-# Activité 2 — VI. Premier pipeline Jenkins
-![Pipeline](screenshots/pipe.png)
-![Successful pipe build](screenshots/jenbuild.png)
-
-
----
-
-# 14. Première introduction à l'automatisation (Vagrant)
-![Capture à ajouter : Vagrantfile](screenshots/vagfile.png)
-![Capture à ajouter : Vagrant up result](screenshots/vagup.png)
-
-
-# 13. Dockeriser le projet web-cv avec nginx
-
-Le projet est un site statique HTML, CSS et JavaScript. Le fichier `web-cv/Dockerfile` utilise l'image légère `nginx:alpine` et copie les fichiers du site dans le répertoire servi par nginx, `/usr/share/nginx/html/`. Le site est donc disponible sur le port `80` du conteneur.
-
-### Capture d'écran — Dockerfile
-
-<!-- Remplacer ce placeholder par une capture du fichier web-cv/Dockerfile. -->
-![Capture à ajouter : Dockerfile nginx](screenshots/dockerfile.png)
-
----
-
-# 12. Créer une image Docker du projet
-
-Construire l'image puis lancer un conteneur :
-
-
-
-L'option `-t` attribue le nom et la version `web-cv:1.0` à l'image. Le port `8080` de la machine est redirigé vers le port `80` servi par nginx dans le conteneur. Le site est accessible à l'adresse `http://localhost:8080`.
-
-### Capture d'écran — Commandes de création et lancement de l'image
-
-<!-- Remplacer ce placeholder par une capture des commandes et de leur résultat. -->
-![Capture à ajouter : commandes Docker pour créer et lancer l'image](screenshots/phyacc.png)
-
----
-
-# 11. Lancer le projet avec Docker Compose
-
-Le fichier `web-cv/compose.yaml` décrit la construction de la même image et la redirection du port `8080` vers le port `80` du conteneur. Depuis le dossier `web-cv/web-cv`, exécuter :
-
-Si le conteneur lancé directement à l'étape 12 existe encore, le supprimer avant de démarrer Compose, car les deux configurations utilisent le nom `web-cv` :
+### 1.3 Docker installation (Task 3)
 
 ```bash
-docker stop web-cv
-docker rm web-cv
-```
-
-Puis lancer Compose :
-
-```bash
-docker compose up -d --build
-docker compose ps
-```
-
-L'option `--build` construit l'image à partir du Dockerfile avant le démarrage. La commande `ps` permet de vérifier l'état du service. Le site est accessible à l'adresse `http://localhost:8080`. Pour arrêter et supprimer le conteneur créé par Compose :
-
-```bash
-docker compose down
-```
-
-### Capture d'écran — Commandes Docker Compose
-
-<!-- Remplacer ce placeholder par une capture des commandes Compose et de leur résultat. -->
-![Capture à ajouter : commandes Docker Compose](screenshots/compose.png)
-
----
-
-# 10. Évolution du mini-CV vers DevSecOps Portfolio
-## 10.1. New Website State
-![Part 1](screenshots/new0.png)
-![Part 2](screenshots/new1.png)
-
-## 10.2. JavaScript Projects Section
-![Projects JS Section](screenshots/js-snippet.png)
-
----
-
-# 1. Installation de Debian13 6.12 et configuration de SSH
-
-## Installation de la VM (KVM)
-
-Une machine virtuelle a été créée avec **Debian13 6.12**.
-
-Configuration utilisée :
-
-* CPU : `2`
-* RAM : `3GB`
-* Disque : `30`
-* Réseau : `NAT`
-* Hostname : `debkvm`
-
-Après l'installation, le système a été mis à jour :
-
-```bash
-sudo apt update
-sudo apt upgrade -y
-```
-
-### Capture d'écran — Configuration SSH
-
-![Configuration SSH](screenshots/conf-ssh.png)
-
----
-
-# 2. Test de l'accès SSH depuis la machine physique
-
-Depuis la machine physique, la connexion SSH a été effectuée avec :
-
-```bash
-ssh hw-deb-kvm
-```
-
-Lors de la première connexion, l'empreinte du serveur a été acceptée.
-
-Une fois connecté, l'identité de la machine a été vérifiée :
-
-```bash
-hostname
-```
-
-et :
-
-```bash
-whoami
-```
-
-### Résultat
-
-La connexion SSH à la VM Ubuntu Server a été réalisée avec succès depuis la machine physique.
-
-### Capture d'écran — Connexion SSH
-
-![Test SSH depuis la machine physique](screenshots/test-ssh.png)
-
----
-
-# 3. Installation de Docker
-
-## 3.1 Mise à jour du système
-
-```bash
-sudo apt update
-```
-
-## 3.2 Installation des dépendances
-
-```bash
-sudo apt install ca-certificates curl -y
-```
-
-## 3.3 Ajout du dépôt Docker
-
-Création du répertoire contenant les clés :
-
-```bash
-sudo install -m 0755 -d /etc/apt/keyrings
-```
-
-Téléchargement de la clé GPG Docker :
-
-```bash
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
-  -o /etc/apt/keyrings/docker.asc
-```
-
-Modification des permissions :
-
-```bash
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-```
-
-Ajout du dépôt Docker :
-
-```bash
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-```
-
-Mise à jour de la liste des paquets :
-
-```bash
-sudo apt update
-```
-
-## 3.4 Installation de Docker Engine
-
-```bash
-sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
-```
-
-## 3.5 Vérification
-
-Vérification du service Docker :
-
-```bash
-sudo systemctl status docker
-```
-
-Vérification de la version :
-
-```bash
+sudo apt update && sudo apt install -y ca-certificates curl gnupg
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER && newgrp docker
 docker --version
+docker run --rm hello-world
 ```
 
-### Capture d'écran — Installation et test Docker
+![Docker installation and hello-world](docs/screenshots/a1-03-docker.png)
 
-![Docker installation](screenshots/docker-test.png)
-
----
-
-# 4. Installation et configuration de Jenkins
-
-Jenkins est exécuté dans un conteneur Docker avec une configuration **Docker Compose**. Les données sont conservées dans le volume `jenkins_home`, même si le conteneur est recréé.
-
-## 4.1 Création du fichier Compose
-
-Création d'un dossier dédié sur la VM :
+### 1.4 Jenkins installation (Task 4)
 
 ```bash
-mkdir -p ~/jenkins
-cd ~/jenkins
+sudo apt install -y openjdk-21-jre
+curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key \
+  | sudo tee /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+  https://pkg.jenkins.io/debian-stable binary/" \
+  | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
+sudo apt update && sudo apt install -y jenkins
+sudo systemctl status jenkins
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 ```
 
-Création du fichier `compose.yaml` :
+Jenkins reachable at `http://192.168.56.10:8080`.
+
+![Jenkins dashboard](docs/screenshots/a1-04-jenkins.png)
+
+### 1.5 Mini-CV → DevSecOps Portfolio (Tasks 5, 7–9)
+
+A one-page CV (`index.html`, `style.css`, `script.js`) was first created, then evolved into a portfolio with the sections **About, Skills, Projects, Experience, Contact** and **DevSecOps Skills** (Git, Docker, Jenkins, Kubernetes, Ansible, Terraform, Argo CD). Projects are rendered dynamically from a JavaScript array.
 
 ```bash
-nano compose.yaml
+mkdir devsecops-portfolio && cd devsecops-portfolio
+git init
+# ... create index.html, style.css, script.js, assets/
+git add . && git commit -m "feat: initial DevSecOps portfolio"
 ```
 
-Contenu du fichier :
+![DevSecOps Portfolio — desktop view](docs/screenshots/a1-05-portfolio.png)
+
+```javascript
+// script.js — dynamic project rendering (extract)
+const projects = [
+  { name: "DevSecOps Portfolio", stack: "Next.js, Docker, Jenkins" },
+  { name: "CI/CD Hardening",     stack: "GitHub Actions, Trivy, Cosign" },
+];
+const grid = document.querySelector("#projects-grid");
+projects.forEach(p => {
+  const card = document.createElement("article");
+  card.className = "card";
+  card.innerHTML = `<h3>${p.name}</h3><p>${p.stack}</p>`;
+  grid.appendChild(card);
+});
+```
+
+### 1.6 GitHub SSH authentication (Task 6)
+
+```bash
+ssh-keygen -t ed25519 -C "kadhem@devsecops" -f ~/.ssh/id_ed25519 -N ""
+cat ~/.ssh/id_ed25519.pub      # paste into GitHub → Settings → SSH and GPG keys
+ssh -T git@github.com
+git remote add origin git@github.com:<user>/devsecops-portfolio.git
+git push -u origin main
+```
+
+![GitHub SSH key and successful authentication](docs/screenshots/a1-06-github-ssh.png)
+
+### 1.7 Containerization (Tasks 10–14)
+
+**Dockerfile (Nginx, Task 10):**
+
+```dockerfile
+FROM nginx:1.27-alpine
+COPY . /usr/share/nginx/html
+EXPOSE 80
+```
+
+```bash
+docker build -t cv-docker .                          # Task 11
+docker run -d --name cv -p 8080:80 cv-docker         # Task 12
+docker ps
+```
+
+![Portfolio served by the cv-docker container](docs/screenshots/a1-12-container.png)
+
+**Docker Compose (Task 13):**
 
 ```yaml
 services:
-  jenkins:
-    image: jenkins/jenkins:lts-jdk21
-    container_name: jenkins
-    restart: unless-stopped
+  web:
+    image: cv-docker
+    build: .
     ports:
-      - "8080:8080"
-    volumes:
-      - jenkins_home:/var/jenkins_home
-
-volumes:
-  jenkins_home:
+      - "8080:80"
 ```
-
-## 4.2 Démarrage et vérification
-
-Téléchargement de l'image et démarrage de Jenkins en arrière-plan :
 
 ```bash
 docker compose up -d
-```
-
-Vérification de l'état du conteneur :
-
-```bash
 docker compose ps
 ```
 
-Consultation des journaux de démarrage :
+![docker compose ps output](docs/screenshots/a1-13-compose.png)
+
+**Publication to GitHub (Task 14):**
 
 ```bash
-docker compose logs -f jenkins
-```
-
-Pour quitter l'affichage des journaux, utiliser `Ctrl+C`. Jenkins continue de fonctionner en arrière-plan.
-
-### Récupération du mot de passe initial
-
-```bash
-docker compose exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
-```
-
-Le mot de passe obtenu est utilisé lors de la première configuration de Jenkins.
-
-## 4.3 Accès depuis la machine physique
-
-Depuis le navigateur de la machine physique :
-
-```text
-http://<VM_IP>:8080
-```
-
-Exemple :
-
-```text
-http://192.168.122.50:8080
-```
-
-L'interface Web de Jenkins est alors accessible depuis la machine physique. Le port `8080` doit être autorisé par le pare-feu de la VM et accessible sur le réseau.
-
-### Capture d'écran — Interface Web Jenkins
-
-![Jenkins Web Interface](screenshots/jenkins-test-web.png)
-
----
-
-# 5. Création d'un mini CV One Page
-
-Un mini CV One Page a été développé avec :
-
-* HTML5
-* CSS3
-* JavaScript
-
-## 5.1 Structure du projet
-
-```text
-web-cv/
-├── index.html
-│── style.css
-|── script.js
-```
-
-## 5.2 Initialisation du dépôt Git
-
-Création du dossier :
-
-```bash
-mkdir web-cv
-cd web-cv
-```
-
-Initialisation du dépôt :
-
-```bash
-git init
-```
-
-Ajout des fichiers :
-
-```bash
-git add .
-```
-
-Création du premier commit :
-
-```bash
-git commit -m "Init"
-```
-
-### Capture d'écran — Mini CV
-
-![Mini CV One Page](screenshots/web-cv.png)
-
----
-
-# 6. Activation des Push GitHub via SSH
-
-## 6.1 Vérification de Git
-
-```bash
-git --version
-```
-
-## 6.2 Génération d'une clé SSH
-
-Une clé SSH a été générée pour permettre l'authentification auprès de GitHub :
-
-```bash
-ssh-keygen -t ed25519 -C "<GITHUB_EMAIL>"
-```
-
-Lorsque demandé, un emplacement et éventuellement une passphrase ont été définis.
-
-Les clés sont généralement créées dans :
-
-```text
-~/.ssh/
-```
-
-Vérification :
-
-```bash
-ls -la ~/.ssh
-```
-
-La clé publique correspondante est :
-
-```text
-~/.ssh/id_ed25519.pub
-```
-
-## 6.3 Affichage de la clé publique
-
-```bash
-cat ~/.ssh/id_ed25519.pub
-```
-
-La clé publique a été copiée.
-
-### Capture d'écran — Clé SSH publique
-
-![SSH public key](screenshots/07-ssh-public-key.png)
-
-> **Important :** seule la clé publique `id_ed25519.pub` doit être copiée vers GitHub. La clé privée `id_ed25519` ne doit jamais être partagée.
-
----
-
-## 6.4 Ajout de la clé dans GitHub
-
-Dans GitHub :
-
-```text
-Settings
-    ↓
-SSH and GPG keys
-    ↓
-New SSH key
-```
-
-Un nom a été donné à la clé :
-
-```text
-Ubuntu Server VM
-```
-
-La clé publique générée précédemment a été collée dans le champ correspondant, puis enregistrée.
-
----
-
-## 6.5 Test de la connexion SSH à GitHub
-
-La connexion a été testée avec :
-
-```bash
-ssh -T git@github.com
-```
-
-Un message similaire à celui-ci confirme l'authentification :
-
-```text
-Hi <GITHUB_USERNAME>! You've successfully authenticated,
-but GitHub does not provide shell access.
-```
-
----
-
-## 6.6 Configuration du dépôt local avec SSH
-
-Affichage de l'URL actuelle du dépôt :
-
-```bash
-git remote -v
-```
-
-Configuration de l'URL SSH :
-
-```bash
-git remote set-url origin git@github.com:<GITHUB_USERNAME>/<REPOSITORY>.git
-```
-
-Vérification :
-
-```bash
-git remote -v
-```
-
-Résultat :
-
-```text
-origin  git@github.com:<GITHUB_USERNAME>/<REPOSITORY>.git (fetch)
-origin  git@github.com:<GITHUB_USERNAME>/<REPOSITORY>.git (push)
-```
-
----
-
-## 6.7 Test du Push
-
-Après une modification du CV :
-
-```bash
-git status
-```
-
-Puis :
-
-```bash
-git add .
-git commit -m "Update CV"
-```
-
-Enfin :
-
-```bash
+git add Dockerfile docker-compose.yml
+git commit -m "feat: containerize portfolio with Docker and Compose"
 git push origin main
 ```
 
-Le push est effectué via SSH sans demander le mot de passe GitHub.
+### 1.8 Vagrant automation (Tasks 15–17)
+
+```bash
+vagrant --version
+```
+
+`Vagrantfile`:
+
+```ruby
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/jammy64"
+  config.vm.hostname = "devsecops-vm"
+  config.vm.network "private_network", ip: "192.168.56.20"
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 2048
+    vb.cpus   = 2
+  end
+end
+```
+
+```bash
+vagrant up        # Task 15
+vagrant ssh       # Task 16
+vagrant status    # Task 17
+```
+
+![vagrant status output](docs/screenshots/a1-17-vagrant-status.png)
 
 ---
 
-# 7. Résumé des réalisations
+## 2. Activity 2 — Next.js Migration and First Jenkins Pipeline
 
-| Étape | Réalisation                        | Statut |
-| ----- | ---------------------------------- | ------ |
-| 1     | Installation Debian13 6.12   | ✅      |
-| 2     | Accès distant SSH                  | ✅      |
-| 3     | Installation Docker                | ✅      |
-| 4     | Installation Jenkins comme service | ✅      |
-| 5     | Création du mini CV One Page       | ✅      |
-| 6     | Configuration GitHub SSH + Push    | ✅      |
+**Objective:** Re-implement the portfolio in Next.js with reusable components and separated data, then build a first Jenkins pipeline that clones, installs dependencies, and builds the application.
+
+### 2.1 Next.js application (Task 18)
+
+```bash
+npx create-next-app@latest devsecops-portfolio \
+  --ts --eslint --tailwind --app --src-dir --import-alias "@/*"
+cd devsecops-portfolio && npm run dev
+```
+
+![Next.js application running on port 3000](docs/screenshots/a2-18-nextjs.png)
+
+### 2.2 Reusable components (Task 19)
+
+```
+src/components/
+├── Header.tsx
+├── About.tsx
+├── Skills.tsx
+├── Projects.tsx
+├── Contact.tsx
+└── Footer.tsx
+```
+
+Each section of the former static page was extracted into a presentational component, composed in `src/app/page.tsx`.
+
+### 2.3 Separated data (Task 20)
+
+```typescript
+// src/data/projects.ts
+export const projects = [
+  { slug: "devsecops-portfolio", title: "DevSecOps Portfolio", stack: ["Next.js", "Docker", "Jenkins"] },
+  { slug: "ci-cd-hardening",     title: "CI/CD Hardening",     stack: ["GitHub Actions", "Trivy", "Cosign"] },
+];
+```
+
+```typescript
+// src/data/skills.ts
+export const skills = [
+  { category: "DevSecOps", items: ["Git", "Docker", "Jenkins", "Kubernetes", "Ansible", "Terraform", "Argo CD"] },
+];
+```
+
+### 2.4 Project pages (Task 21)
+
+- `src/app/projects/page.tsx` — project index.
+- `src/app/projects/[slug]/page.tsx` — dynamic project detail page.
+
+```tsx
+// src/app/projects/[slug]/page.tsx (extract)
+export default async function ProjectPage({ params }: { params: { slug: string } }) {
+  const project = projects.find(p => p.slug === params.slug);
+  if (!project) notFound();
+  return <article><h1>{project.title}</h1></article>;
+}
+```
+
+![Project detail page](docs/screenshots/a2-21-project-page.gif)
+
+### 2.5 First Jenkins pipeline (Tasks 22–24)
+
+`Jenkinsfile`:
+
+```groovy
+pipeline {
+  agent any
+  tools { nodejs 'node-21' }
+  stages {
+    stage('Checkout') {
+      steps { git branch: 'main', url: 'git@github.com:<user>/devsecops-portfolio.git' }   // Task 22
+    }
+    stage('Install') {
+      steps { sh 'npm ci' }                                                                // Task 23
+    }
+    stage('Build') {
+      steps { sh 'npm run build' }                                                         // Task 24
+    }
+  }
+  post { always { archiveArtifacts artifacts: '.next/**', allowEmptyArchive: true } }
+}
+```
+
+```bash
+sudo systemctl status jenkins   # Jenkins must be reachable from the host
+```
+
+![Jenkins pipeline — Checkout, Install, Build stages](docs/screenshots/a2-24-jenkins-pipeline.png)
+
+---
+
+## 3. Deliverables and Evidence
+
+| Activity | Task | Deliverable | Evidence |
+|---|---|---|---|
+| 1 | 1 | Ubuntu Server VM reachable | `a1-02-ssh-access.png` |
+| 1 | 2 | SSH access from host | `a1-02-ssh-access.png` |
+| 1 | 3 | Docker installed | `a1-03-docker.png` |
+| 1 | 4 | Jenkins running on `:8080` | `a1-04-jenkins.png` |
+| 1 | 5–9 | DevSecOps Portfolio (static) | `a1-05-portfolio.png` |
+| 1 | 6 | GitHub SSH push | `a1-06-github-ssh.png` |
+| 1 | 10–12 | `cv-docker` image served | `a1-12-container.png` |
+| 1 | 13 | Docker Compose deployment | `a1-13-compose.png` |
+| 1 | 14 | GitHub repo updated | commit history |
+| 1 | 15–17 | Vagrant VM automated | `a1-17-vagrant-status.png` |
+| 2 | 18 | Next.js portfolio | `a2-18-nextjs.png` |
+| 2 | 19 | Reusable components | `src/components/` |
+| 2 | 20 | Data files | `src/data/` |
+| 2 | 21 | Project pages | `a2-21-project-page.gif` |
+| 2 | 22–24 | Jenkins pipeline (checkout/install/build) | `a2-24-jenkins-pipeline.png` |
+
+---
+
+## 4. Repository Structure (end of Activity 2)
+
+```
+devsecops-portfolio/
+├── docs/screenshots/          # evidence referenced above
+├── public/
+├── src/
+│   ├── app/
+│   │   ├── page.tsx
+│   │   └── projects/
+│   │       ├── page.tsx
+│   │       └── [slug]/page.tsx
+│   ├── components/
+│   └── data/
+├── Dockerfile
+├── docker-compose.yml
+├── Jenkinsfile
+├── Vagrantfile
+├── package.json
+└── README.md
+```
+## 3. Activity 3 — Ansible Automation, Express API and Dockerization
+
+**Objective:** Automate server configuration with Ansible, build an Express API exposing the portfolio data (`/api/health`, `/api/profile`, `/api/projects`, `/api/skills`), wire the Next.js frontend to consume it through an environment-based `API_URL`, and package both tiers as Docker images orchestrated by Docker Compose.
+
+---
+
+## 4. Activity 4 — API Hardening, PostgreSQL and Jenkins DevSecOps Pipeline
+
+**Objective:** Secure the Express API (`POST /api/contact`, Zod validation, centralized error handling, Helmet, rate limiting), persist contact messages in PostgreSQL with Prisma migrations, add frontend/API/integration tests, and extend the Jenkins pipeline with secret scanning, SAST, dependency and image scans that fail on critical findings.
+
+---
+
+## 5. Activity 5 — GitHub Actions, Git Workflow, Image Optimization and Supply Chain Security
+
+**Objective:** Build a GitHub Actions workflow (tests, SAST, dependency check, image build, Trivy) with restricted `GITHUB_TOKEN` permissions and SHA-pinned actions, adopt a branch/PR/Conventional Commits/SemVer workflow with branch protection, optimize Dockerfiles through multi-stage and multi-arch builds, publish images to Harbor, and secure the supply chain with SBOMs, Cosign signatures, build attestations and SLSA/in-toto positioning.
+
+---
+
+## 6. Activity 6 — Local Cloud (Floci), Terraform and Terraform + Ansible Automation
+
+**Objective:** Emulate AWS locally with Floci (S3, SQS, DynamoDB, Lambda, Secrets Manager), provision those resources with Terraform (modules, dev/staging/prod, remote S3 state with locking), enforce IaC security with Checkov/Trivy, explore OpenTofu, Terragrunt and Pulumi, and combine Terraform provisioning with Ansible configuration for a fully reproducible environment.
+
+---
+
+## 7. Activity 7 — Kubernetes (K3s), Hardening and Continuous Security
+
+**Objective:** Deploy the portfolio on K3s with ConfigMaps, Secrets, PVC-backed PostgreSQL and TLS-terminated Ingress, enforce health probes, requests/limits and HPA, apply RBAC and Pod Security Standards, restrict traffic with NetworkPolicies (and Cilium/Hubble), codify policies with Kyverno (and OPA Gatekeeper), manage secrets with Vault + External Secrets + Sealed Secrets, and detect drift at runtime with Trivy Operator, Kubescape and Falco.
+
+---
+
+## 8. Activity 8 — Helm, Kustomize, GitOps with Argo CD and Observability Stack
+
+**Objective:** Package the application with Helm and Kustomize overlays, enforce signed-image deployment with Kyverno `verifyImages`, deploy through Argo CD with a dedicated GitOps repo (self-healing, image bumps, ApplicationSet across environments), and build the full observability stack — Prometheus, Grafana, Loki, Tempo and OpenTelemetry — with SLI/SLO alerts, runbooks, OWASP ZAP DAST and k6 performance gating.
+
+---
+
+## 9. Activity 9 — Progressive Delivery, Data Resilience, Identity, Service Mesh and CI/CD Hardening
+
+**Objective:** Implement Blue/Green and Canary releases with Argo Rollouts and Prometheus-driven auto-rollback, add OpenFeature feature flags, run PostgreSQL through CloudNativePG with S3 backups, protect the namespace with Velero (backup → delete → restore), add Keycloak OIDC with role-based route protection, encrypt service-to-service traffic and split traffic with Istio, and replace static credentials with OIDC federation and least-privilege self-hosted runners.
+
+---
+
+## 10. Activity 10 — Platform Engineering, FinOps, Chaos and Incident Management
+
+**Objective:** Reproduce the pipeline in GitLab CI/CD and compare it with Jenkins and GitHub Actions, deploy the portfolio with Flux CD and compare it with Argo CD, manage a second K3s cluster through Argo CD `ApplicationSet` and explore Karmada, provision cloud resources with Crossplane (XRD/Composition) and kro, stand up a Backstage-based Internal Developer Platform with a Golden Path, measure DORA metrics and FinOps costs with OpenCost, and validate resilience and incident response with Chaos Mesh experiments and a post-mortem.
