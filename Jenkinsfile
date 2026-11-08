@@ -145,6 +145,7 @@ pipeline {
                                   --scan frontend --scan api \
                                   --data "$WORKSPACE/.dependency-check-data" \
                                   --nvdApiKey "$NVD_API_KEY" \
+                                  --disableOssIndex \
                                   --format HTML --out reports/dependency-check \
                                   --log reports/dependency-check/dependency-check.log \
                                   --failOnCVSS 9.0
