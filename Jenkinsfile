@@ -4,7 +4,7 @@ pipeline {
     options {
         skipDefaultCheckout(true)
         timeout(time: 45, unit: 'MINUTES')
-        // Avoid concurrent builds of this job competing for Dependency-Check's shared database.
+        // Avoid concurrent builds of this job accessing the same workspace-local database.
         disableConcurrentBuilds()
     }
 
@@ -131,17 +131,15 @@ pipeline {
         // Scan project dependencies against the cached OWASP vulnerability database.
         stage('OWASP Dependency-Check') {
             steps {
-                sh 'mkdir -p reports/dependency-check'
+                sh 'mkdir -p "$WORKSPACE/.dependency-check-data" reports/dependency-check'
                 script {
-                    // Persist the vulnerability database between builds; other jobs sharing this volume
-                    // must also avoid running Dependency-Check concurrently.
-                    docker.image('owasp/dependency-check:latest').inside(
-                        '-v dependency-check-data:/usr/share/dependency-check/data --entrypoint=""'
-                    ) {
+                    // Keep the database persistent for this job without sharing it with other Jenkins jobs.
+                    docker.image('owasp/dependency-check:latest').inside('--entrypoint=""') {
                         // Fail the build only for vulnerabilities at or above this CVSS score.
                         sh '''
                             /usr/share/dependency-check/bin/dependency-check.sh \
                               --scan frontend --scan api \
+                              --data "$WORKSPACE/.dependency-check-data" \
                               --format HTML --out reports/dependency-check \
                               --log reports/dependency-check/dependency-check.log \
                               --failOnCVSS 9.0

@@ -3,3 +3,4 @@ docs/other/
 .env
 node_modules/
 .vagrant/
+.dependency-check-data/
