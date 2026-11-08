@@ -83,7 +83,11 @@ pipeline {
             steps {
                 script {
                     docker.image('semgrep/semgrep:latest').inside('--entrypoint=""') {
-                        sh 'semgrep scan --config p/javascript --config p/nodejs --error frontend api'
+                        sh '''
+                            export HOME="$WORKSPACE"
+                            mkdir -p "$HOME/.semgrep"
+                            semgrep scan --config p/javascript --config p/nodejs --error frontend api
+                        '''
                     }
                 }
             }
