@@ -27,8 +27,10 @@ Removed the shared Docker-volume mount. Dependency-Check now stores its database
 
 Pinned the scanner image to `owasp/dependency-check:12.1.0`, which supports updating the NVD data without an API key. This avoids the 13.0.0 regression while keeping updates enabled. The Jenkinsfile still disables concurrent builds of this job so two runs do not contend for the same workspace-local database.
 
+Added the NVD API key to Jenkins as a Global **Secret text** credential with ID `nvd-api-key`. The pipeline binds it with `withCredentials` and passes it to Dependency-Check through `--nvdApiKey`; the key is not stored in the repository or echoed in the command source.
+
 ## Validation trace
 
 Build #11 checked out `e5faba3c861d079d19a94333d2129171684a0cbb`. Frontend/API dependency installation, generated Prisma client, frontend tests/lint/build, API tests, Gitleaks, Semgrep, and both npm audits completed. Semgrep reported zero findings; npm audits reported existing high-severity dependency advisories. Dependency-Check then failed during the NVD update because the `latest` image rejected an absent key. Docker image builds and Trivy were skipped after that failure.
 
-The workspace-local database change is confirmed to have removed the H2 lock failure. The 12.1.0 pin requires a new Jenkins run to verify the NVD update and complete the pipeline.
+The workspace-local database change is confirmed to have removed the H2 lock failure. Build #12 was aborted at the user's request while Dependency-Check had downloaded 130,000 of 421,206 NVD records without an API key. Build #13 was launched by replaying the pipeline with the `nvd-api-key` credential binding; its NVD update and overall result are pending.

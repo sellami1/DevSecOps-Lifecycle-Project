@@ -136,15 +136,18 @@ pipeline {
                     // Keep the database persistent for this job without sharing it with other Jenkins jobs.
                     // Version 13.0.0 rejects a missing NVD API key; 12.1.0 supports keyless updates.
                     docker.image('owasp/dependency-check:12.1.0').inside('--entrypoint=""') {
-                        // Fail the build only for vulnerabilities at or above this CVSS score.
-                        sh '''
-                            /usr/share/dependency-check/bin/dependency-check.sh \
-                              --scan frontend --scan api \
-                              --data "$WORKSPACE/.dependency-check-data" \
-                              --format HTML --out reports/dependency-check \
-                              --log reports/dependency-check/dependency-check.log \
-                              --failOnCVSS 9.0
-                        '''
+                        withCredentials([string(credentialsId: 'nvd-api-key', variable: 'NVD_API_KEY')]) {
+                            // Fail the build only for vulnerabilities at or above this CVSS score.
+                            sh '''
+                                /usr/share/dependency-check/bin/dependency-check.sh \
+                                  --scan frontend --scan api \
+                                  --data "$WORKSPACE/.dependency-check-data" \
+                                  --nvdApiKey "$NVD_API_KEY" \
+                                  --format HTML --out reports/dependency-check \
+                                  --log reports/dependency-check/dependency-check.log \
+                                  --failOnCVSS 9.0
+                            '''
+                        }
                     }
                 }
             }
