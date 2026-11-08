@@ -27,4 +27,6 @@ The Jenkinsfile still disables concurrent builds of this job so two runs do not 
 
 ## Validation trace
 
-Committed the isolation change as `b86f378` on local branch `act4`. The push to `origin/act4` was rejected because this environment has no GitHub credentials (`could not read Username for 'https://github.com': terminal prompts disabled`). Jenkins therefore still points to the prior commit. No new Jenkins build was launched against stale pipeline code; Jenkins validation is pending an authorized push of `b86f378`.
+Committed the isolation change as `b86f378` and the investigation trace as `e5faba3` on branch `act4`. The branch was pushed to `origin`, and `git ls-remote` confirmed the remote points to `e5faba3c861d079d19a94333d2129171684a0cbb`.
+
+Jenkins validation could not be started in this session: the shared Jenkins browser client disconnected before the job page could be reopened, and `deskserver` does not resolve from the shell environment. The fix is therefore pushed but not yet verified by a Jenkins run.
