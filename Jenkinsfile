@@ -123,6 +123,7 @@ pipeline {
                             /usr/share/dependency-check/bin/dependency-check.sh \
                               --scan frontend --scan api \
                               --format HTML --out reports/dependency-check \
+                              --log reports/dependency-check/dependency-check.log \
                               --failOnCVSS 9.0
                         '''
                     }
