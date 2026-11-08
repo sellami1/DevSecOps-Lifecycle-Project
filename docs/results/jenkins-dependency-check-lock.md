@@ -17,6 +17,7 @@ The diagnostic log showed Dependency-Check retrying the lock every 15 seconds. T
 2. Confirmed the logged command still launched the scanner with `-v dependency-check-data:/usr/share/dependency-check/data`.
 3. Compared the repeated H2 lock messages in `reports/dependency-check/dependency-check.log` with the pipeline's shared-volume configuration. The evidence indicated database contention, not a vulnerability finding in the application.
 4. Confirmed the existing `disableConcurrentBuilds()` option only serializes builds of this pipeline; it does not coordinate other Jenkins jobs that mount the same Docker volume.
+5. Build #10 was manually aborted while Dependency-Check was running, so it did not verify a resolution.
 
 ## Resolution
 
@@ -26,4 +27,4 @@ The Jenkinsfile still disables concurrent builds of this job so two runs do not 
 
 ## Validation trace
 
-Validation by Jenkins is pending. The build number, commit, and stage results will be recorded after the updated pipeline is run.
+Committed the isolation change as `b86f378` on local branch `act4`. The push to `origin/act4` was rejected because this environment has no GitHub credentials (`could not read Username for 'https://github.com': terminal prompts disabled`). Jenkins therefore still points to the prior commit. No new Jenkins build was launched against stale pipeline code; Jenkins validation is pending an authorized push of `b86f378`.
