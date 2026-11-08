@@ -4,6 +4,7 @@ pipeline {
     options {
         skipDefaultCheckout(true)
         timeout(time: 45, unit: 'MINUTES')
+        disableConcurrentBuilds()
     }
 
     tools {
