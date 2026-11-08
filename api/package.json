@@ -1,0 +1,23 @@
+{
+  "name": "devsecops-api",
+  "version": "1.0.0",
+  "description": "DevSecOps Portfolio API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "test": "node --test test/api.test.js",
+    "test:integration": "node --test test/integration.test.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^8.7.3",
+    "helmet": "^8.1.0",
+    "prisma": "^6.19.0",
+    "zod": "^3.25.76"
+  }
+}

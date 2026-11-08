@@ -1,0 +1,196 @@
+---
+- name: Install Docker and deploy the DevSecOps Portfolio stack
+  hosts: all
+  become: true
+  vars:
+    portfolio_dir: /opt/devsecops-portfolio
+    docker_apt_distribution: "{{ ansible_distribution | lower }}"
+    docker_apt_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}"
+    docker_group_user: "{{ ansible_user | default('vagrant') }}"
+  pre_tasks:
+    - name: Verify the target is a supported Debian-family distribution and architecture
+      ansible.builtin.assert:
+        that:
+          - docker_apt_distribution in ['debian', 'ubuntu']
+          - ansible_architecture in ['x86_64', 'aarch64']
+        fail_msg: >-
+          Docker installation supports Debian or Ubuntu on x86_64 or aarch64;
+          found {{ ansible_distribution }} on {{ ansible_architecture }}.
+  tasks:
+    - name: Install Docker repository prerequisites
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: true
+
+    - name: Create apt keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Download Docker signing key
+      ansible.builtin.get_url:
+        url: "https://download.docker.com/linux/{{ docker_apt_distribution }}/gpg"
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: Configure Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ docker_apt_arch }} signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/{{ docker_apt_distribution }}
+          {{ ansible_distribution_release }} stable
+        filename: docker
+        state: present
+        update_cache: true
+
+    - name: Install Docker Engine and Compose
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - name: Enable and start Docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Allow the SSH user to run Docker
+      ansible.builtin.user:
+        name: "{{ docker_group_user }}"
+        groups: docker
+        append: true
+
+    - name: Create deployment directory
+      ansible.builtin.file:
+        path: "{{ portfolio_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Create application directories
+      ansible.builtin.file:
+        path: "{{ portfolio_dir }}/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - api
+        - frontend
+
+    - name: Copy API runtime files
+      ansible.builtin.copy:
+        src: "../../api/{{ item.src }}"
+        dest: "{{ portfolio_dir }}/api/{{ item.dest }}"
+        mode: "{{ item.mode | default('0644') }}"
+      loop:
+        - { src: Dockerfile, dest: Dockerfile }
+        - { src: .dockerignore, dest: .dockerignore }
+        - { src: package.json, dest: package.json }
+        - { src: package-lock.json, dest: package-lock.json }
+        - { src: server.js, dest: server.js }
+
+    - name: Copy API data and migrations
+      ansible.builtin.copy:
+        src: "../../api/{{ item.src }}/"
+        dest: "{{ portfolio_dir }}/api/{{ item.dest }}/"
+        mode: preserve
+      loop:
+        - { src: data, dest: data }
+        - { src: prisma, dest: prisma }
+
+    - name: Create API test directory
+      ansible.builtin.file:
+        path: "{{ portfolio_dir }}/api/test"
+        state: directory
+        mode: "0755"
+
+    - name: Copy API integration test
+      ansible.builtin.copy:
+        src: ../../api/test/integration.test.js
+        dest: "{{ portfolio_dir }}/api/test/integration.test.js"
+        mode: "0644"
+
+    - name: Copy frontend build files
+      ansible.builtin.copy:
+        src: "../../frontend/{{ item }}"
+        dest: "{{ portfolio_dir }}/frontend/{{ item }}"
+        mode: "0644"
+      loop:
+        - Dockerfile
+        - .dockerignore
+        - package.json
+        - package-lock.json
+        - next.config.mjs
+        - eslint.config.mjs
+
+    - name: Copy frontend application directories
+      ansible.builtin.copy:
+        src: "../../frontend/{{ item }}/"
+        dest: "{{ portfolio_dir }}/frontend/{{ item }}/"
+        mode: preserve
+      loop:
+        - app
+        - components
+        - data
+        - lib
+
+    - name: Copy Docker Compose configuration
+      ansible.builtin.copy:
+        src: ../../docker-compose.yml
+        dest: "{{ portfolio_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Create local environment file when absent
+      ansible.builtin.copy:
+        src: ../../.env.example
+        dest: "{{ portfolio_dir }}/.env"
+        force: false
+        mode: "0600"
+        owner: "{{ docker_group_user }}"
+
+    - name: Restrict the environment file to the deployment user
+      ansible.builtin.file:
+        path: "{{ portfolio_dir }}/.env"
+        owner: "{{ docker_group_user }}"
+        mode: "0600"
+
+    - name: Configure API host binding when requested by the VM provider
+      ansible.builtin.lineinfile:
+        path: "{{ portfolio_dir }}/.env"
+        regexp: "^API_BIND_ADDRESS="
+        line: "API_BIND_ADDRESS={{ api_bind_address }}"
+        owner: "{{ docker_group_user }}"
+        mode: "0600"
+      when: api_bind_address is defined
+
+    - name: Build and start the portfolio stack
+      ansible.builtin.command:
+        cmd: docker compose up --build -d
+        chdir: "{{ portfolio_dir }}"
+      changed_when: true
+
+    - name: Wait for the API health endpoint
+      ansible.builtin.uri:
+        url: http://127.0.0.1:4000/api/health
+        status_code: 200
+      register: api_health
+      retries: 30
+      delay: 5
+      until: api_health.status == 200
+
+    - name: Verify the frontend responds
+      ansible.builtin.uri:
+        url: http://127.0.0.1:3000/
+        status_code: 200
+      register: frontend_health
+      retries: 30
+      delay: 5
+      until: frontend_health.status == 200
