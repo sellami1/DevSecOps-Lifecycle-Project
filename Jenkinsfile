@@ -132,6 +132,8 @@ pipeline {
         stage('OWASP Dependency-Check') {
             steps {
                 sh 'mkdir -p "$WORKSPACE/.dependency-check-data" reports/dependency-check'
+                // Builds are serialized and this database is workspace-local; clear a stale marker left by an aborted update.
+                sh 'rm -f "$WORKSPACE/.dependency-check-data/odc.update.lock"'
                 script {
                     // Keep the database persistent for this job without sharing it with other Jenkins jobs.
                     // Version 13.0.0 rejects a missing NVD API key; 12.1.0 supports keyless updates.
