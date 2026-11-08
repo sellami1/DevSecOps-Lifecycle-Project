@@ -4,6 +4,7 @@ pipeline {
     options {
         skipDefaultCheckout(true)
         timeout(time: 45, unit: 'MINUTES')
+        // Avoid concurrent builds of this job competing for Dependency-Check's shared database.
         disableConcurrentBuilds()
     }
 
@@ -17,10 +18,12 @@ pipeline {
     }
 
     stages {
+        // Check out the source and derive a traceable image tag from the commit.
         stage('Checkout') {
             steps {
                 checkout scm
                 script {
+                    // Use the checked-out commit as an immutable image tag for traceability.
                     env.IMAGE_TAG = sh(
                         script: 'git rev-parse --short=7 HEAD',
                         returnStdout: true
@@ -29,8 +32,10 @@ pipeline {
             }
         }
 
+        // Install locked dependencies and generate the API database client in parallel.
         stage('Install dependencies') {
             parallel {
+                // Install the frontend's exact lockfile dependencies.
                 stage('Frontend dependencies') {
                     steps {
                         dir('frontend') {
@@ -38,6 +43,7 @@ pipeline {
                         }
                     }
                 }
+                // Install API dependencies and generate the database client.
                 stage('API dependencies') {
                     steps {
                         dir('api') {
@@ -49,8 +55,10 @@ pipeline {
             }
         }
 
+        // Run frontend quality checks and API tests in parallel.
         stage('Automated tests') {
             parallel {
+                // Test, lint, and build the frontend.
                 stage('Frontend tests and lint') {
                     steps {
                         dir('frontend') {
@@ -60,6 +68,7 @@ pipeline {
                         }
                     }
                 }
+                // Run the API test suite.
                 stage('API tests') {
                     steps {
                         dir('api') {
@@ -70,6 +79,7 @@ pipeline {
             }
         }
 
+        // Fail the pipeline if repository content contains detected secrets.
         stage('Secret scan — Gitleaks') {
             steps {
                 script {
@@ -80,11 +90,13 @@ pipeline {
             }
         }
 
+        // Scan frontend and API source for JavaScript and Node.js security issues.
         stage('SAST — Semgrep') {
             steps {
                 script {
                     docker.image('semgrep/semgrep:latest').inside('--entrypoint=""') {
                         sh '''
+                            # Semgrep writes its user-level files under HOME; use the writable workspace.
                             export HOME="$WORKSPACE"
                             mkdir -p "$HOME/.semgrep"
                             semgrep scan --config p/javascript --config p/nodejs --error frontend api
@@ -94,8 +106,10 @@ pipeline {
             }
         }
 
+        // Check frontend and API packages for known critical vulnerabilities.
         stage('Node.js dependency audit') {
             parallel {
+                // Audit frontend package dependencies.
                 stage('Frontend npm audit') {
                     steps {
                         dir('frontend') {
@@ -103,6 +117,7 @@ pipeline {
                         }
                     }
                 }
+                // Audit API package dependencies.
                 stage('API npm audit') {
                     steps {
                         dir('api') {
@@ -113,13 +128,17 @@ pipeline {
             }
         }
 
+        // Scan project dependencies against the cached OWASP vulnerability database.
         stage('OWASP Dependency-Check') {
             steps {
                 sh 'mkdir -p reports/dependency-check'
                 script {
+                    // Persist the vulnerability database between builds; other jobs sharing this volume
+                    // must also avoid running Dependency-Check concurrently.
                     docker.image('owasp/dependency-check:latest').inside(
                         '-v dependency-check-data:/usr/share/dependency-check/data --entrypoint=""'
                     ) {
+                        // Fail the build only for vulnerabilities at or above this CVSS score.
                         sh '''
                             /usr/share/dependency-check/bin/dependency-check.sh \
                               --scan frontend --scan api \
@@ -132,6 +151,7 @@ pipeline {
             }
         }
 
+        // Build frontend and API Docker images tagged with the checked-out commit.
         stage('Build SHA-tagged Docker images') {
             steps {
                 script {
@@ -143,10 +163,12 @@ pipeline {
             }
         }
 
+        // Fail the pipeline if either built image contains critical vulnerabilities.
         stage('Critical image scan — Trivy') {
             steps {
                 sh 'mkdir -p "$TRIVY_CACHE_DIR"'
                 script {
+                    // Mount the Docker socket so Trivy can inspect images built by this pipeline.
                     docker.image('aquasec/trivy:latest').inside(
                         "-v /var/run/docker.sock:/var/run/docker.sock -v ${env.TRIVY_CACHE_DIR}:/root/.cache/ --entrypoint=\"\""
                     ) {
@@ -160,6 +182,7 @@ pipeline {
 
     post {
         always {
+            // Preserve the Dependency-Check report and diagnostic log even when a later stage fails.
             archiveArtifacts artifacts: 'reports/dependency-check/**', allowEmptyArchive: true
         }
     }
