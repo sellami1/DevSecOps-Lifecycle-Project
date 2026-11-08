@@ -134,7 +134,8 @@ pipeline {
                 sh 'mkdir -p "$WORKSPACE/.dependency-check-data" reports/dependency-check'
                 script {
                     // Keep the database persistent for this job without sharing it with other Jenkins jobs.
-                    docker.image('owasp/dependency-check:latest').inside('--entrypoint=""') {
+                    // Version 13.0.0 rejects a missing NVD API key; 12.1.0 supports keyless updates.
+                    docker.image('owasp/dependency-check:12.1.0').inside('--entrypoint=""') {
                         // Fail the build only for vulnerabilities at or above this CVSS score.
                         sh '''
                             /usr/share/dependency-check/bin/dependency-check.sh \
