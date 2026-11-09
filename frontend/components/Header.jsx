@@ -1,7 +1,27 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
+
+const themeChangeEvent = 'cv-theme-change';
+
+function getThemeSnapshot() {
+  return window.localStorage.getItem('cv-theme') === 'dark';
+}
+
+function getServerThemeSnapshot() {
+  return false;
+}
+
+function subscribeToThemeChanges(onStoreChange) {
+  window.addEventListener('storage', onStoreChange);
+  window.addEventListener(themeChangeEvent, onStoreChange);
+
+  return () => {
+    window.removeEventListener('storage', onStoreChange);
+    window.removeEventListener(themeChangeEvent, onStoreChange);
+  };
+}
 
 const navigation = [
   ['About', '/#about'],
@@ -12,20 +32,21 @@ const navigation = [
 ];
 
 export default function Header() {
-  const [dark, setDark] = useState(false);
+  const dark = useSyncExternalStore(
+    subscribeToThemeChanges,
+    getThemeSnapshot,
+    getServerThemeSnapshot,
+  );
 
   useEffect(() => {
-    const savedTheme = window.localStorage.getItem('cv-theme');
-    const useDark = savedTheme === 'dark';
-    document.body.classList.toggle('dark', useDark);
-    setDark(useDark);
-  }, []);
+    document.body.classList.toggle('dark', dark);
+  }, [dark]);
 
   function toggleTheme() {
     const nextTheme = dark ? 'light' : 'dark';
     document.body.classList.toggle('dark', nextTheme === 'dark');
     window.localStorage.setItem('cv-theme', nextTheme);
-    setDark(nextTheme === 'dark');
+    window.dispatchEvent(new Event(themeChangeEvent));
   }
 
   return (
