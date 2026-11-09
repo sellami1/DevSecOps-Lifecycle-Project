@@ -128,7 +128,7 @@ pipeline {
             }
         }
 
-        // Scan project dependencies against the cached OWASP vulnerability database.
+        // Scan the complete locked npm dependency graphs without scanning generated bundles.
         stage('OWASP Dependency-Check') {
             steps {
                 sh 'mkdir -p "$WORKSPACE/.dependency-check-data" reports/dependency-check'
@@ -142,7 +142,8 @@ pipeline {
                             // Fail the build only for vulnerabilities at or above this CVSS score.
                             sh '''
                                 /usr/share/dependency-check/bin/dependency-check.sh \
-                                  --scan frontend --scan api \
+                                  --scan frontend/package-lock.json \
+                                  --scan api/package-lock.json \
                                   --data "$WORKSPACE/.dependency-check-data" \
                                   --nvdApiKey "$NVD_API_KEY" \
                                   --disableOssIndex \
