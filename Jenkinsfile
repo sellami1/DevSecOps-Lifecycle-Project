@@ -169,18 +169,34 @@ pipeline {
             }
         }
 
-        // Fail the pipeline if either built image contains critical vulnerabilities.
+        // Scan exported image archives so Trivy does not need access to the Docker socket.
         stage('Critical image scan — Trivy') {
             steps {
-                sh 'mkdir -p "$TRIVY_CACHE_DIR"'
+                sh '''
+                    mkdir -p "$TRIVY_CACHE_DIR" "$WORKSPACE/.trivy-image-archives"
+                    docker save --output "$WORKSPACE/.trivy-image-archives/frontend.tar" \
+                      "devsecops-portfolio:${IMAGE_TAG}"
+                    docker save --output "$WORKSPACE/.trivy-image-archives/api.tar" \
+                      "devsecops-api:${IMAGE_TAG}"
+                '''
                 script {
-                    // Mount the Docker socket so Trivy can inspect images built by this pipeline.
                     docker.image('aquasec/trivy:latest').inside(
-                        "-v /var/run/docker.sock:/var/run/docker.sock -v ${env.TRIVY_CACHE_DIR}:/root/.cache/ --entrypoint=\"\""
+                        "-v ${env.TRIVY_CACHE_DIR}:/root/.cache/ --entrypoint=\"\""
                     ) {
-                        sh "trivy image --exit-code 1 --severity CRITICAL devsecops-portfolio:${env.IMAGE_TAG}"
-                        sh "trivy image --exit-code 1 --severity CRITICAL devsecops-api:${env.IMAGE_TAG}"
+                        sh 'trivy image --input .trivy-image-archives/frontend.tar --exit-code 1 --severity CRITICAL'
+                        sh 'trivy image --input .trivy-image-archives/api.tar --exit-code 1 --severity CRITICAL'
                     }
+                }
+            }
+            post {
+                always {
+                    sh '''
+                        if [ -d "$WORKSPACE/.trivy-image-archives" ]; then
+                            rm -f "$WORKSPACE/.trivy-image-archives/frontend.tar" \
+                                  "$WORKSPACE/.trivy-image-archives/api.tar"
+                            rmdir "$WORKSPACE/.trivy-image-archives"
+                        fi
+                    '''
                 }
             }
         }
