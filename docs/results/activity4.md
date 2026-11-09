@@ -105,10 +105,8 @@ The lockfiles were audited separately: both `npm audit --audit-level=critical` c
 
 **Screenshot — pending Jenkins execution:** pipeline test stages, SHA-tagged images, successful security pipeline, deliberate fake-secret failure, Dependency-Check report.
 
-![Evidence — Jenkins tests](../screenshots/a4-61-jenkins-tests.png)
+![Evidence — Jenkins full | success](../screenshots/a4-68-jenkins-success.png)
 ![Evidence — SHA-tagged images](../screenshots/a4-62-sha-images.png)
-![Evidence — successful security pipeline](../screenshots/a4-63-jenkins-success.png)
 ![Evidence — unsuccessful security check (gitleaks)](../screenshots/a4-64-jenkins-failure.gif)
 ![Evidence — unsuccessful security check (owasp)](../screenshots/a4-65-jenkins-failure.png)
-![Evidence — intentional secret-scan failure](../screenshots/a4-66-jenkins-secret-failure.png)
 ![Evidence — dependency report](../screenshots/a4-67-dependency-finding.gif)
