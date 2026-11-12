@@ -1,0 +1,21 @@
+version: 2
+updates:
+  # Dépendances npm pour l'API
+  - package-ecosystem: "npm"
+    directory: "/api"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "fix(api)"
+      include: "scope"
+
+  # Dépendances npm pour le Frontend
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "fix(frontend)"
+      include: "scope"

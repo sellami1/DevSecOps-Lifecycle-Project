@@ -1,0 +1,128 @@
+name: CI - Tests & Security
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+permissions: {} # On part de zéro permission pour la sécurité
+
+jobs:
+  test-frontend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v4 # À remplacer par le SHA de commit pour la question 77
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm test -- --passWithNoTests
+
+  test-api:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: ./api
+    steps:
+      - uses: actions/checkout@v4 # À remplacer par le SHA
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: api/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # Pour commenter la PR si un secret est trouvé
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Gitleaks a besoin de l'historique complet
+      - name: Gitleaks Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  semgrep-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # Nécessaire pour uploader les résultats SARIF
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - run: semgrep ci --sarif --output=semgrep-results.sarif
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }} # Optionnel pour le dashboard
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep-results.sarif
+
+  dependency-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Audit API
+        working-directory: ./api
+        run: |
+          npm ci
+          npm audit --audit-level=high
+      - name: Audit Frontend
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm audit --audit-level=high
+
+  build-and-scan:
+    runs-on: ubuntu-latest
+    needs: [test-frontend, test-api] # On ne build que si les tests passent
+    permissions:
+      contents: read
+      packages: write # Si vous poussez vers GHCR (Activité 20)
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API Image
+        run: docker build -t devsecops-api:${{ github.sha }} ./api
+      - name: Build Frontend Image
+        run: docker build -t devsecops-portfolio:${{ github.sha }} ./frontend
+      
+      - name: Run Trivy on API Image
+        uses: aquasecurity/trivy-action@v0.36.0 # À épingler par SHA
+        with:
+          image-ref: 'devsecops-api:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1' # Fait échouer le job si vulnérabilité critique/high
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+      
+      - name: Run Trivy on Frontend Image
+        uses: aquasecurity/trivy-action@v0.36.0 # À épingler par SHA
+        with:
+          image-ref: 'devsecops-portfolio:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
