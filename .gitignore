@@ -4,3 +4,4 @@ docs/other/
 node_modules/
 .vagrant/
 .dependency-check-data/
+tmp.*
