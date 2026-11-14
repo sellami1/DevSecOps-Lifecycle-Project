@@ -14,6 +14,7 @@ pipeline {
 
     environment {
         DOCKER_BUILDKIT = '1'
+        HARBOR_REGISTRY = '192.168.122.149'
         TRIVY_CACHE_DIR = "${WORKSPACE}/.trivy-cache"
     }
 
@@ -196,6 +197,39 @@ pipeline {
                                   "$WORKSPACE/.trivy-image-archives/api.tar"
                             rmdir "$WORKSPACE/.trivy-image-archives"
                         fi
+                    '''
+                }
+            }
+        }
+
+        stage('Push images to Harbor') {
+            when {
+                anyOf {
+                    branch 'main'
+                    expression { env.GIT_BRANCH == 'origin/main' }
+                }
+            }
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'harbor-ci-pusher',
+                    usernameVariable: 'HARBOR_ROBOT_USER',
+                    passwordVariable: 'HARBOR_ROBOT_TOKEN'
+                )]) {
+                    sh '''
+                        set +x
+                        printf '%s' "$HARBOR_ROBOT_TOKEN" |
+                          docker login "$HARBOR_REGISTRY" \
+                            --username "$HARBOR_ROBOT_USER" \
+                            --password-stdin
+                        trap 'docker logout "$HARBOR_REGISTRY" >/dev/null 2>&1 || true' EXIT
+
+                        docker tag "devsecops-api:${IMAGE_TAG}" \
+                          "$HARBOR_REGISTRY/portfolio/devsecops-api:${IMAGE_TAG}"
+                        docker push "$HARBOR_REGISTRY/portfolio/devsecops-api:${IMAGE_TAG}"
+
+                        docker tag "devsecops-portfolio:${IMAGE_TAG}" \
+                          "$HARBOR_REGISTRY/portfolio/devsecops-portfolio:${IMAGE_TAG}"
+                        docker push "$HARBOR_REGISTRY/portfolio/devsecops-portfolio:${IMAGE_TAG}"
                     '''
                 }
             }
